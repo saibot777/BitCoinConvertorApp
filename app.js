@@ -1,13 +1,15 @@
 const express = require('express');
+const request = require('request');
 const bodyparser = require('body-parser');
 const bitcore = require('bitcore-lib');
-
 let app = express();
 
 app.use(bodyparser.urlencoded({
     extended: true
 }));
 app.use(bodyparser.json());
+
+app.set("view engine", "ejs");
 
 const brainWallet = (uinput, callback) => {
     let input = new Buffer(uinput);
@@ -18,8 +20,17 @@ const brainWallet = (uinput, callback) => {
     callback(pk, addy);
 };
 
+request({
+    url: "https://blockchain.info/ticker",
+    json: true
+}, (err, res, body) => {
+    price = body.btc_usd.last;
+});
+
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + "/index.html");
+    res.render("index", {
+        lastPrice: price
+    });
 })
 
 app.post('/wallet', (req, res) => {
