@@ -1,5 +1,4 @@
 const express = require('express');
-const request = require('request');
 const bodyparser = require('body-parser');
 const bitcore = require('bitcore-lib');
 
@@ -10,15 +9,14 @@ app.use(bodyparser.urlencoded({
 }));
 app.use(bodyparser.json());
 
-request(
-    {
-        url: "https://blockchain.info/stats?format=json",
-        json: true
-    }, (error, response, body) => {
-        btcPrice = body.market_price_usd;
-        btcBlocks = body.n_blocks_total;
-    }
-);
+const brainWallet = (uinput, callback) => {
+    let input = new Buffer(uinput);
+    let hash = bitcore.crypto.Hash.sha256(input);
+    let bn = bitcore.crypto.BN.fromBuffer(hash)
+    let pk = new bitcore.PrivateKey(bn).toWIF();
+    let addy = new bitcore.PrivateKey(bn).toAddress();
+    callback(pk, addy);
+};
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + "/index.html");
@@ -26,12 +24,9 @@ app.get('/', (req, res) => {
 
 app.post('/wallet', (req, res) => {
     let brainsrc = req.body.brainsrc;
-    let input = new Buffer(brainsrc);
-    let hash = bitcore.crypto.Hash.sha256(input);
-    let bn = bitcore.crypto.BN.fromBuffer(hash)
-    let pk = new bitcore.PrivateKey(bn).toWIF();
-    let addy = new bitcore.PrivateKey(bn).toAddress();
-    res.send("The Brain Wallet of: " + brainsrc + "<br>Addy: " + addy + "<br> Private Key: " + pk);
+    brainWallet(brainsrc, (key, addr) => {
+        res.send("The Brain Wallet of: " + brainsrc + "<br>Addy: " + addr + "<br> Private Key: " + key);
+    });
 });
 
 app.listen(3000, () => {
